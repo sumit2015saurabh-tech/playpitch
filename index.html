@@ -173,11 +173,13 @@
 
   <!-- HOME -->
   <section class="screen on" id="home">
-    <div class="hero">
+    <div class="hero" onclick="loadSport('🏏 Cricket')" style="cursor:pointer">
       <h2>🏏 Women's T20 — WI vs NZ</h2>
-      <p>Game time 01:30 PM · markets open</p>
+      <p>Game time 01:30 PM · tap to open markets ›</p>
       <span class="live">● BET STARTED</span>
     </div>
+    <div class="sec">Today's Matches</div>
+    <div id="homeMatches"></div>
     <div class="sec">Quick Play</div>
     <div class="grid" id="homeGames"></div>
     <div class="sec">News</div>
@@ -188,7 +190,7 @@
   <section class="screen" id="sports">
     <div class="hero" style="background:linear-gradient(120deg,#0b3d2e,#176f4f)">
       <h2 id="matchTitle">West Indies W vs New Zealand W</h2>
-      <p>Women's T20 International · Demo market</p>
+      <p id="matchSub">Women's T20 International · Demo market</p>
       <span class="live">● IN-PLAY</span>
     </div>
     <div id="markets"></div>
@@ -258,10 +260,44 @@ function go(id){ document.querySelectorAll('.screen').forEach(s=>s.classList.tog
 /* ---------------- category strip ---------------- */
 const CATS=['🏏 Cricket','⚽ Football','🏀 Basketball','🎾 Tennis','🐎 Racing','🎰 Lottery','🃏 Live Casino','💡 Tips'];
 document.getElementById('cats').innerHTML=CATS.map((c,i)=>`<button class="cat ${i===0?'active':''}" onclick="catClick(this,'${c}')">${c}</button>`).join('');
-function catClick(el,c){ document.querySelectorAll('.cat').forEach(x=>x.classList.remove('active')); el.classList.add('active'); if(c.includes('Casino')||c.includes('Lottery')){go('casino'); if(c.includes('Lottery'))setCasTab('Lottery');} else go('sports'); }
+function catClick(el,c){
+  document.querySelectorAll('.cat').forEach(x=>x.classList.remove('active')); el.classList.add('active');
+  if(c.includes('Lottery')){ setCasTab('Lottery'); }
+  else if(c.includes('Casino')){ setCasTab('Popular'); }
+  else if(c.includes('Tips')){ go('home'); toast('Tips & previews — see News below'); }
+  else if(SPORTS[c]){ loadSport(c); }
+  else { go('sports'); }
+}
 
 /* ---------------- sports markets ---------------- */
-const TEAMS=['West Indies W','New Zealand W'];
+const SPORTS={
+  '🏏 Cricket':{t:'West Indies W vs New Zealand W',s:"Women's T20 International",m:[
+    ['Match Winner',[{name:'West Indies W',back:6.0,lay:6.2,bv:'1.2K',lv:'8.7K'},{name:'New Zealand W',back:1.19,lay:1.20,bv:'68K',lv:'43K'}]],
+    ['Total Runs Over/Under 145.5',[{name:'Over 145.5',back:1.90,lay:1.95},{name:'Under 145.5',back:1.92,lay:1.97}]],
+    ['1st Over Even/Odd Runs',[{name:'Even Runs',back:1.95,lay:2.00},{name:'Odd Runs',back:1.95,lay:2.00}]],
+    ['To Win The Toss',[{name:'West Indies W',back:1.98,lay:2.02},{name:'New Zealand W',back:1.98,lay:2.02}]]
+  ]},
+  '⚽ Football':{t:'Real Madrid vs Barcelona',s:'La Liga — El Clasico',m:[
+    ['Match Result',[{name:'Real Madrid',back:2.4,lay:2.5},{name:'Draw',back:3.4,lay:3.6},{name:'Barcelona',back:2.8,lay:2.9}]],
+    ['Total Goals Over/Under 2.5',[{name:'Over 2.5',back:1.85,lay:1.90},{name:'Under 2.5',back:1.95,lay:2.00}]],
+    ['Both Teams To Score',[{name:'Yes',back:1.70,lay:1.75},{name:'No',back:2.10,lay:2.20}]]
+  ]},
+  '🏀 Basketball':{t:'Lakers vs Celtics',s:'NBA — Regular Season',m:[
+    ['Match Winner',[{name:'Lakers',back:1.90,lay:1.95},{name:'Celtics',back:1.90,lay:1.95}]],
+    ['Total Points Over/Under 219.5',[{name:'Over 219.5',back:1.90,lay:1.95},{name:'Under 219.5',back:1.90,lay:1.95}]],
+    ['Total Points Even/Odd',[{name:'Even',back:1.95,lay:2.00},{name:'Odd',back:1.95,lay:2.00}]]
+  ]},
+  '🎾 Tennis':{t:'Djokovic vs Alcaraz',s:'Grand Slam — Final',m:[
+    ['Match Winner',[{name:'Djokovic',back:2.10,lay:2.15},{name:'Alcaraz',back:1.75,lay:1.80}]],
+    ['Total Games Over/Under 38.5',[{name:'Over 38.5',back:1.90,lay:1.95},{name:'Under 38.5',back:1.90,lay:1.95}]],
+    ['First Set Winner',[{name:'Djokovic',back:2.05,lay:2.10},{name:'Alcaraz',back:1.80,lay:1.85}]]
+  ]},
+  '🐎 Racing':{t:'Race 5 — Demo Downs',s:'Greyhound Racing',m:[
+    ['Win — Pick the Trap',[{name:'Trap 1 · Bolt',back:4.5,lay:4.8},{name:'Trap 2 · Flash',back:3.2,lay:3.4},{name:'Trap 3 · Rocket',back:5.0,lay:5.5},{name:'Trap 4 · Comet',back:6.5,lay:7.0}]]
+  ]}
+};
+let currentSport='🏏 Cricket';
+function loadSport(key){ if(SPORTS[key]){currentSport=key;} renderSports(); go('sports'); document.querySelectorAll('.cat').forEach(x=>x.classList.toggle('active',x.textContent.trim()===key)); }
 function oddsCard(title,rows,suspended){
   return `<div class="mkt"><div class="mkt-h"><span>${title}</span><span class="cash">Cash Out</span></div>
     <div class="colhead"><span>Yes / Back</span><span>No / Lay</span></div>
@@ -273,12 +309,10 @@ function oddsCard(title,rows,suspended){
       </div>`}</div>`).join('')}</div>`;
 }
 function renderSports(){
-  let h='';
-  h+=oddsCard('Match Winner',[{name:TEAMS[0],back:6.0,lay:6.2,bv:'1.2K',lv:'8.7K'},{name:TEAMS[1],back:1.19,lay:1.20,bv:'68K',lv:'43K'}]);
-  h+=oddsCard('Total Runs Over/Under 145.5',[{name:'Over 145.5',back:1.90,lay:1.95},{name:'Under 145.5',back:1.92,lay:1.97}]);
-  h+=oddsCard('1st Over — Even / Odd Runs',[{name:'Even Runs',back:1.95,lay:2.00},{name:'Odd Runs',back:1.95,lay:2.00}]);
-  h+=oddsCard('To Win The Toss',[{name:TEAMS[0],back:1.98,lay:2.02},{name:TEAMS[1],back:1.98,lay:2.02}]);
-  document.getElementById('markets').innerHTML=h;
+  const sp=SPORTS[currentSport]||SPORTS['🏏 Cricket'];
+  document.getElementById('matchTitle').textContent=sp.t;
+  document.getElementById('matchSub').textContent=sp.s+' · Demo market';
+  document.getElementById('markets').innerHTML=sp.m.map(mk=>oddsCard(mk[0],mk[1])).join('');
 }
 function renderLive(){
   const j=()=>(Math.random()*0.3+1.7).toFixed(2);
@@ -420,6 +454,12 @@ function resetCrash(){ CRASH.running=false; const btn=document.getElementById('c
 
 /* ---------------- home + news + history ---------------- */
 function renderHome(){
+  document.getElementById('homeMatches').innerHTML=Object.keys(SPORTS).map(k=>{
+    const sp=SPORTS[k];
+    return `<div class="news" style="cursor:pointer;align-items:center" onclick="loadSport('${k}')">
+      <div style="width:50px;height:50px;border-radius:10px;background:linear-gradient(160deg,var(--navy),var(--teal));color:#fff;display:flex;align-items:center;justify-content:center;font-size:24px;flex:none">${k.split(' ')[0]}</div>
+      <div><h4>${sp.t}</h4><p>${sp.s} · tap to view markets ›</p></div></div>`;
+  }).join('');
   document.getElementById('homeGames').innerHTML=GAMES.Popular.slice(0,6).map(g=>
     `<div class="gcard" style="background:linear-gradient(160deg,${g[1]},#0c0c1a)" onclick="openGame('${g[2]}','${g[0]}')"><span class="tag">PLAYPITCH</span>${g[0]}</div>`).join('');
   const news=[['IND A vs AFG A','Afghanistan A edge India A by four runs via DLS in the Tri-Nation A Series.'],
